@@ -1,0 +1,37 @@
+This directory contains 6 subdirectories with names benchmark_xy, where x=0 and
+1<=y<=6. Each of these subdirectories contains a "source" file and a "target"
+file. The program computePatchOpt must take these files as input and generate a
+patch such that [applyPatch patch source] yields target.
+
+For reference, we provide below the size of these files. The data was generated
+using ls -lh
+
+benchmark_01:
+total 540K
+266K source
+269K target
+
+benchmark_02:
+total 3.3M
+1.7M source
+1.7M target
+
+benchmark_03:
+total 5.4M
+2.8M source
+2.7M target
+
+benchmark_04:
+total 15M
+7.1M source
+7.1M target
+
+benchmark_05:
+total 42M
+21M source
+21M target
+
+benchmark_06:
+total 97M
+49M source
+49M target

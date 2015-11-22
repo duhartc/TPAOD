@@ -1,0 +1,4 @@
+gcc -g -Wall   src/applyPatch.c -o bin/applyPatch
+pdflatex -output-directory ./rapport rapport/rapport.tex 
+make: pdflatex: commande introuvable
+make: *** [rapport/rapport.pdf] Erreur 127
