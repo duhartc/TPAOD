@@ -12,13 +12,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <assert.h>
 
 #define min(a,b) ((a<=b)?a:b)
 
 struct line
 {
-    int numLine;
-    int nbChar;
+    uint32_t numLine;
+    uint32_t nbChar;
     struct line *nxt;
 
 };
@@ -35,7 +37,7 @@ struct line *initList()
    return lines;                        /* retour de la liste (correctement allouée et affectée ou NULL) */
 }
 
-void addNext(struct line *lines, long int nbChar, long int num) {
+void addNext(struct line *lines, uint32_t nbChar, uint32_t num) {
     lines->nxt = malloc(sizeof(struct line));
     if (lines->nxt) {
         lines->nxt->numLine = num;
@@ -45,50 +47,56 @@ void addNext(struct line *lines, long int nbChar, long int num) {
     // sinon problème de malloc
 }
 
-int listLines(struct line *lines, FILE *file)
+uint32_t listLines(struct line *lines, FILE *file)
 {
 	int c;
-	long int nbLines = 0;
-        long int nbCharPerLine = 0;
-	int c2 = '\0';
+        uint32_t nbLines = 0;
+        uint32_t nbCharPerLine = 0;
+	uint32_t c2 = '\0';
         struct line *current = lines; 
  
 	while((c=fgetc(file)) != EOF)
 	{
+	 		
 		if(c=='\n') {
                     nbCharPerLine++;
                     nbLines++;
                     addNext(current,nbCharPerLine,nbLines);
-                    nbCharPerLine = 0;
+		    nbCharPerLine = 0;
                     current = current->nxt;
                 }
-                nbCharPerLine++;
-		c2 = c;
+		else {
+                c2 = c;
+		nbCharPerLine++;
+		}
 	}
  
 	/* Ici, c2 est égal au caractère juste avant le EOF. */
-	if(c2 != '\n')
+	if(c2 != '\n'){
 		nbLines++; /* Dernière ligne non finie */
+		addNext(current, nbCharPerLine+1, nbLines);
+	}
  
 	return nbLines;
 }
  
 /* renvoie le nb de caractères de la ligne i*/ 
 // TO DO : lever une exception si i> nb lignes du fichier ? 
-int getNbCar(int i, struct line *lines, int *somme){
+uint32_t getNbCar(uint32_t i, struct line *lines, uint32_t *somme){
   *somme = 0;
   struct line *current=lines ; 
-  int k=1;
+  uint32_t k=0;
   while(k!=i){ 
     *somme += current->nbChar;
     current=current->nxt ;
     k++ ;     
   }
+
   return current->nbChar ; 
 }
 
-bool compareLigne(FILE *inputFile, FILE *outputFile, int nbCar){
-    int i=1 ;
+bool compareLigne(FILE *inputFile, FILE *outputFile, uint32_t nbCar){
+    uint32_t i=1 ;
     char c1 ; 
     char c2; 
     
@@ -104,12 +112,12 @@ bool compareLigne(FILE *inputFile, FILE *outputFile, int nbCar){
 }
 
 
-bool egalite(int i, int j, struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile){
+bool egalite(uint32_t i, uint32_t j, struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile){
   /* s1 & s2 contiennent respectivement le nombre de caractères avant la ligne i (j) dans le fichier 1 (2)*/
-  int s1 = 0;
-  int s2 = 0;
-  int nbCarI = getNbCar(i,lines1, &s1);
-  int nbCarJ = getNbCar(j, lines2, &s2);
+  uint32_t s1 = 0;
+  uint32_t s2 = 0;
+  uint32_t nbCarI = getNbCar(i,lines1, &s1);
+  uint32_t nbCarJ = getNbCar(j, lines2, &s2);
   if (nbCarI==nbCarJ){
     // TO DO : comparer le contenu des deux lignes
     fseek(inputFile, s1, SEEK_SET );
@@ -121,51 +129,84 @@ bool egalite(int i, int j, struct line *lines1, struct line *lines2, FILE *input
 }
 
 /*renvoie f(i,j) selon l'équation de Bellman*/
-long int minimum(int i, int j, size_t n, long int Tab[][n],struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile){
-  int *s= 0; ;
-  long int m = 10+Tab[i-1][j];
-  for (int k=2 ; k<=i ; k++){
-    m=min(15+Tab[i-k][j], m);
+uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab,struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile){
+  uint32_t *s= malloc(sizeof(uint32_t)) ;
+
+  uint32_t m = 10+tab[i-1][j];
+  for (uint32_t k=2 ; k<=i ; k++){
+    m=min(15+tab[i-k][j], m);
   } ;
-  m=min(m, 10+getNbCar(j, lines2,s)+Tab[i][j-1]) ;
-  m=min(m, 10+getNbCar(j, lines2,s)+Tab[i-1][j-1]);
+  m=min(m, 10+getNbCar(j, lines2,s)+tab[i][j-1]) ;
+  m=min(m, 10+getNbCar(j, lines2,s)+tab[i-1][j-1]);
 
-  if (egalite(i,j, lines1, lines2, inputFile, outputFile))
-    m=min(m, Tab[i-1][j-1]);
-
+  if (egalite(i,j, lines1, lines2, inputFile, outputFile)){
+    //printf("ligne %i de input et %i de output égales \n", i,j);
+    m=min(m, tab[i-1][j-1]);
+  }
   return m; 
 }
 
+// TODO : gérer fichier videsur l'init de tab
+uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile){
+  uint32_t *s = malloc(sizeof(uint32_t)) ;
 
-int computePatchOpt(FILE *inputFile, FILE *outputFile){
-    struct line *lines1 = initList();
-    struct line *lines2 = initList(); 
-    int *s = 0 ;
-    
-    /* on stocke le nombre de lignes de chaque fichier ainsi que
+  /* on stocke le nombre de lignes de chaque fichier ainsi que
      le nombre de caractères de chaque ligne */
-    long int nbLines1 = listLines(lines1, inputFile);
-    long int nbLines2 = listLines(lines2, outputFile);
-    
-    long int Tab[nbLines1][nbLines2];
-    /* initialisation du tableau */
-    Tab[0][0]=0;
-    Tab[1][0]=10;
+  	struct line *lines1 = initList();
+	struct line *lines2 = initList(); 
+	uint32_t nbLines1 = listLines(lines1, inputFile);
+	uint32_t nbLines2 = listLines(lines2, outputFile);
+	printf("L1=%i , L2=%i \n", nbLines1, nbLines2); 
 
-    for (long int i=2; i<nbLines1; i++) {
+	/*Allocation d'un tableau */
+	uint32_t **Tab= malloc((nbLines1+1)*sizeof(uint32_t*));
+	assert(Tab!=NULL); 
+	for (uint32_t i = 0; i < nbLines1+1; i++) {
+	  Tab[i] = malloc((nbLines2+1) * sizeof(uint32_t));
+	    assert(Tab[i]!=NULL); 
+	}
+	
+  
+	/*Conditions initiales*/
+	Tab[0][0]=0; 
+	Tab[1][0]=10;  //ATTENTION SI FICHIER VIDE INIT INCORRECTE   
+
+	
+	for (uint32_t i=2; i<nbLines1+1; i++) {
+	  // fprintf(stderr,"la ligne %i de input contient %i car \n", i, getNbCar(i, lines1,s));
         Tab[i][0] = 15;
+      }
+   
+  
+    for (uint32_t j=1; j<nbLines2+1; j++) {
+      Tab[0][j] = 10 + getNbCar(j,lines2,s)+Tab[0][j-1];
+      //printf("la ligne %i de output contient %i car \n", j, getNbCar(j, lines2,s));
     }
-    for (long int j=1; j<nbLines2; j++) {
-      Tab[0][j] = 10 + getNbCar(j,lines2,s);
-    }
-    
-    for (long int i=1; i<nbLines1; i++) {
-        for (long int j=1; j<nbLines2; j++) {
-	      Tab[i][j]= minimum(i,j,nbLines2,Tab, lines1, lines2, inputFile, outputFile);
+       
+    for (uint32_t i=1; i<nbLines1+1; i++) {
+        for (uint32_t j=1; j<nbLines2+1; j++) {
+	      Tab[i][j]= minimum(i,j,Tab, lines1, lines2, inputFile, outputFile);	      
             }
     }
+    
+
+    /* AFFICHAGE TABLEAU */
+    /* printf ("TAB : \n"); */
+    /* for(uint32_t i=0; i<nbLines1+1; i++){ */
+    /*   for(uint32_t j=0;j<nbLines2+1; j++){ */
+    /* 	printf (" %i     ", Tab[i][j]); */
+    /*   } */
+    /*   printf("\n"); */
+    /* }; */
+
+
+    printf("cout minimal Tab[%i][%i]= %i \n" ,nbLines1, nbLines2, Tab[nbLines1][nbLines2]);
     return 0;
+
+
 }
+
+
 
 
 int main(int argc, char *argv[]){
@@ -177,15 +218,17 @@ int main(int argc, char *argv[]){
 	    exit(EXIT_FAILURE); /* indicate failure.*/
 	}
 
-	inputFile = fopen(argv[1] , "r" );
+	inputFile = fopen(argv[1] , "r" ); 
 	outputFile = fopen(argv[2] , "r" );
 	
 	if (inputFile==NULL) {fprintf(stderr, "!!!!! Error opening inputFile !!!!! \n"); exit(EXIT_FAILURE);}
 	if (outputFile==NULL) {fprintf (stderr, "!!!!! Error opening outputFile !!!!!\n"); exit(EXIT_FAILURE);}
-
+	printf("OUVERTURE FICHIERS \n"); 
+	printf("COMPUTE PATCH \n ") ;	
 	computePatchOpt(inputFile, outputFile);
-
+	printf("END COMPUTE PATCH \n ");
 	fclose(inputFile);
 	fclose(outputFile);
+	//FREEEEEEEEEEEEEEE TAS RIEN COMPRIS
 	return 0;
 }
