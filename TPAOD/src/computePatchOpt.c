@@ -201,6 +201,10 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile){
 
 
     printf("cout minimal Tab[%i][%i]= %i \n" ,nbLines1, nbLines2, Tab[nbLines1][nbLines2]);
+
+    // TO DO : stocker le chemin en remontant dans le tableau
+    // générer le patch 
+    
     return 0;
 
 
@@ -212,23 +216,27 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile){
 int main(int argc, char *argv[]){
         FILE *inputFile;
 	FILE *outputFile;
+	FILE *patch ; 
 	
 	if(argc<3){
-		fprintf(stderr, "!!!!! Usage: ./computePatchOpt inputFile outputFile !!!!!\n");
+		fprintf(stderr, "!!!!! Usage: ./computePatchOpt inputFile outputFile patch !!!!!\n");
 	    exit(EXIT_FAILURE); /* indicate failure.*/
 	}
 
 	inputFile = fopen(argv[1] , "r" ); 
 	outputFile = fopen(argv[2] , "r" );
+	patch=fopen(argv[3], "w");
 	
 	if (inputFile==NULL) {fprintf(stderr, "!!!!! Error opening inputFile !!!!! \n"); exit(EXIT_FAILURE);}
 	if (outputFile==NULL) {fprintf (stderr, "!!!!! Error opening outputFile !!!!!\n"); exit(EXIT_FAILURE);}
+	if (patch==NULL) {fprintf (stderr, "!!!!! Error opening outputFile !!!!!\n"); exit(EXIT_FAILURE);}
 	printf("OUVERTURE FICHIERS \n"); 
 	printf("COMPUTE PATCH \n ") ;	
 	computePatchOpt(inputFile, outputFile);
 	printf("END COMPUTE PATCH \n ");
 	fclose(inputFile);
 	fclose(outputFile);
+	fclose(patch);
 	//FREEEEEEEEEEEEEEE TAS RIEN COMPRIS
 	return 0;
 }
