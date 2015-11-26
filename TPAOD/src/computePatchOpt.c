@@ -245,6 +245,41 @@ while(( i !=0)||(j!=0)){
  /* }; */
 
 
+ // parcours du tableau et écriture dans le patch
+ int k =ind; 
+ while (k>=0){
+
+  // si substitution
+   if(path[k].operation==SUBS){
+      //ecrire "+path[k].i\n"
+     // recopier ligne path[k].j du fichier 2
+     return;  
+   }
+   // si addition
+   else if (path[k].operation==ADD){
+     //ecrire "+path[k].i\n"
+     // recopier ligne path[k].j du fichier 2
+     return ; 
+   }
+   else if (path[k].operation==DEL){
+     // si deletion simple
+     if (k==0 || path[k-1].operation!=DEL){
+       // ecrire "dpath[k]\n"
+       return ; 
+     }
+       else{
+	 int compteurdel=1;
+	 while ((k-compteurdel) >=0 && (path[k-compteurdel].operation==DEL))
+	   compteurdel++;
+	 //ecrire D path[k].i compteurdel \n 
+       } 
+     }
+   // else=copie, on fait rien on passe a la case suivante
+   k--;
+   printf("k=%i", k); 
+   }
+
+   
 }
 
 
