@@ -15,7 +15,27 @@
 #include <stdint.h>
 #include <assert.h>
 
-#define min(a,b) ((a<=b)?a:b)
+enum  op{
+  COPIE = 'c', //non affiché ici, on aurait pu mettre '\0'
+  SUBS = '=', 
+  DEL = 'd', 
+  DELM = 'D',
+  ADD = '+'
+};
+
+//#define min(a,b) ((a<=b)?a:b)
+
+int min(int a, int b, enum op opa, enum op opb, enum op *opmin)
+{
+    if (a < b) {
+        *opmin = opa;
+        return a;
+    }
+    else {
+        *opmin = opb;
+        return b;
+    }
+}
 
 struct line
 {
@@ -25,13 +45,6 @@ struct line
 
 };
 
-enum  op{
-  COPIE, 
-  SUBS, 
-  DEL, 
-  DELM,
-  ADD
-};
 
 struct operation{
   enum op operation ; 
@@ -143,28 +156,28 @@ bool egalite(uint32_t i, uint32_t j, struct line *lines1, struct line *lines2, F
 }
 
 /*renvoie f(i,j) selon l'équation de Bellman*/
-uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab,struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile){
+uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab,enum op **top, struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile){
   uint32_t *s= malloc(sizeof(uint32_t)) ;
+  enum op opmin;
 
   uint32_t m = 10+tab[i-1][j];
   for (uint32_t k=2 ; k<=i ; k++){
-    m=min(15+tab[i-k][j], m);
+    m=min(15+tab[i-k][j], m, DELM, DEL, &opmin);
   } ;
-  m=min(m, 10+getNbCar(j, lines2,s)+tab[i][j-1]) ;
-  m=min(m, 10+getNbCar(j, lines2,s)+tab[i-1][j-1]);
+  m=min(m, 10+getNbCar(j, lines2,s)+tab[i][j-1], opmin, ADD, &opmin) ;
+  m=min(m, 10+getNbCar(j, lines2,s)+tab[i-1][j-1], opmin, SUBS, &opmin);
 
   if (egalite(i,j, lines1, lines2, inputFile, outputFile)){
     //printf("ligne %i de input et %i de output égales \n", i,j);
-    m=min(m, tab[i-1][j-1]);
+    m=min(m, tab[i-1][j-1], opmin, COPIE,&opmin);
   }
+  top[i][j]=opmin;
   return m; 
 }
 
 
 
-
-
-void buildPath(uint32_t  L1, uint32_t L2, uint32_t **Tab, struct operation path[]){
+void buildPath(uint32_t  L1, uint32_t L2, enum op **Top, struct operation path[]){
 
 int  i= L1; 
 int j=L2; 
@@ -173,21 +186,21 @@ uint32_t ind=0 ;
 while(( i !=0)||(j!=0)){
  
   //DELETION
-  if ((Tab[i-1][j]<Tab[i-1][j-1])&&(Tab[i-1][j]<Tab[i][j-1])){
+  if (Top[i][j]==DEL){
     path[ind].operation=DEL ;
     i--;
     printf("DEL HAUT!! \n");
   }
 
   //ADDITION
-  else if ((Tab[i][j-1]<Tab[i-1][j-1])&&(Tab[i][j-1]<Tab[i-1][j])){
+  else if (Top[i][j]==ADD){
     path[ind].operation=ADD ; 
     j--;
     printf("ADD GAUCHE\n"); 
   }
 
   //COPIE
-  else if (Tab[i][j]==Tab[i-1][j-1]){
+  else if (Top[i][j]==COPIE){
     path[ind].operation=COPIE ; 
     i--;
     j--;
@@ -252,31 +265,34 @@ while(( i !=0)||(j!=0)){
   // si substitution
    if(path[k].operation==SUBS){
       //ecrire "+path[k].i\n"
-     // recopier ligne path[k].j du fichier 2
-     return;  
+       printf("%c %u\n", (char)SUBS, path[k].i);
+     // recopier ligne path[k].j du fichier 2 TODO !
    }
    // si addition
    else if (path[k].operation==ADD){
      //ecrire "+path[k].i\n"
-     // recopier ligne path[k].j du fichier 2
-     return ; 
+       printf("%c %u\n", (char)ADD, path[k].i);
+     // recopier ligne path[k].j du fichier 2 TODO !
    }
    else if (path[k].operation==DEL){
      // si deletion simple
      if (k==0 || path[k-1].operation!=DEL){
        // ecrire "dpath[k]\n"
-       return ; 
+         printf("%c %u\n", (char)DEL, path[k].i);
      }
-       else{
+     else{
 	 int compteurdel=1;
-	 while ((k-compteurdel) >=0 && (path[k-compteurdel].operation==DEL))
+	 while ((k-compteurdel) >=0 && (path[k-compteurdel].operation==DEL)) {
 	   compteurdel++;
-	 //ecrire D path[k].i compteurdel \n 
+           k+= (1-compteurdel);
+	   //ecrire D path[k].i compteurdel \n 
+           printf("%c %u %u\n", (char)DELM, path[k].i, compteurdel);
+         }
        } 
      }
    // else=copie, on fait rien on passe a la case suivante
    k--;
-   printf("k=%i", k); 
+   //printf("k=%i", k); 
    }
 
    
@@ -299,12 +315,18 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile){
 	uint32_t nbLines2 = listLines(lines2, outputFile);
 	printf("L1=%i , L2=%i \n", nbLines1, nbLines2); 
 
-	/*Allocation d'un tableau */
+	/*Allocation de tableaux */
+        /*pour le coût :*/
 	uint32_t **Tab= malloc((nbLines1+1)*sizeof(uint32_t*));
+        /* on stocke aussi l'opération de coût minimum à chaque fois*/
+        enum op **Top = malloc((nbLines1+1)*sizeof(enum op*));
 	assert(Tab!=NULL); 
+        assert(Top!=NULL);
 	for (uint32_t i = 0; i < nbLines1+1; i++) {
-	  Tab[i] = malloc((nbLines2+1) * sizeof(uint32_t));
+	    Tab[i] = malloc((nbLines2+1) * sizeof(uint32_t));
 	    assert(Tab[i]!=NULL); 
+            Top[i] = malloc((nbLines2+1) * sizeof(enum op));
+	    assert(Top[i]!=NULL); 
 	}
 	
   
@@ -326,7 +348,8 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile){
        
     for (uint32_t i=1; i<nbLines1+1; i++) {
         for (uint32_t j=1; j<nbLines2+1; j++) {
-	      Tab[i][j]= minimum(i,j,Tab, lines1, lines2, inputFile, outputFile);	      
+	      Tab[i][j]= minimum(i,j,Tab, Top, lines1, lines2, inputFile, outputFile);	  
+              printf("%c\n", (char)Top[i][j]);
             }
     }
     
@@ -346,7 +369,7 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile){
     // TO DO : stocker le chemin en remontant dans le tableau
     // générer le patch 
     struct operation path[nbLines1+nbLines2+2];
-    buildPath(nbLines1, nbLines2, Tab, path);
+    buildPath(nbLines1, nbLines2, Top, path);
 
     return 0;
 
@@ -356,12 +379,10 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile){
 
 
 
-
-
 int main(int argc, char *argv[]){
         FILE *inputFile;
 	FILE *outputFile;
-	FILE *patch ; 
+	//FILE *patch ; 
 	
 	if(argc<4){
 		fprintf(stderr, "!!!!! Usage: ./computePatchOpt inputFile outputFile patch !!!!!\n");
@@ -370,18 +391,18 @@ int main(int argc, char *argv[]){
 
 	inputFile = fopen(argv[1] , "r" ); 
 	outputFile = fopen(argv[2] , "r" );
-	patch=fopen(argv[3], "w+");
+	//patch=fopen(argv[3], "w+");
 	
 	if (inputFile==NULL) {fprintf(stderr, "!!!!! Error opening inputFile !!!!! \n"); exit(EXIT_FAILURE);}
 	if (outputFile==NULL) {fprintf (stderr, "!!!!! Error opening outputFile !!!!!\n"); exit(EXIT_FAILURE);}
-	if (patch==NULL) {fprintf (stderr, "!!!!! Error opening patch !!!!!\n"); exit(EXIT_FAILURE);}
+	//if (patch==NULL) {fprintf (stderr, "!!!!! Error opening patch !!!!!\n"); exit(EXIT_FAILURE);}
 	printf("OUVERTURE FICHIERS \n"); 
 	printf("COMPUTE PATCH \n ") ;	
 	computePatchOpt(inputFile, outputFile);
 	printf("END COMPUTE PATCH \n ");
 	fclose(inputFile);
 	fclose(outputFile);
-	fclose(patch);
+	//fclose(patch);
 	//FREEEEEEEEEEEEEEE TAS RIEN COMPRIS
 	return 0;
 }
