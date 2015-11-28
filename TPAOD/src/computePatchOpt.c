@@ -255,7 +255,7 @@ void printLine(int numLine, struct line *lines, FILE* outputFile) {
     }
 }
 
-void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, int ind, uint32_t nbLines1) {
+void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, int ind) {
     // parcours du tableau et écriture dans le patch
     rewind(outputFile); //on remet le pointeur au debut du fichier
     int k = ind;
@@ -372,7 +372,7 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
     struct operation path[nbLines1 + nbLines2 + 2];
     //regrouper Top et path??
     int ind = buildPath(nbLines1, nbLines2, Top, path);
-    printPatch(path, lines2, outputFile, ind, nbLines1);
+    printPatch(path, lines2, outputFile, ind);
     return 0;
 
 
