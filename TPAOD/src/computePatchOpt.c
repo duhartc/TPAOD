@@ -255,7 +255,7 @@ void printLine(int numLine, struct line *lines, FILE* outputFile) {
     }
 }
 
-void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, int ind) {
+void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, int ind, uint32_t nbLines1) {
     // parcours du tableau et écriture dans le patch
     rewind(outputFile); //on remet le pointeur au debut du fichier
     int k = ind;
@@ -269,8 +269,9 @@ void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, 
             printLine(path[k].j + 1, lines2, outputFile);
         }            // si addition
         else if (path[k].operation == ADD) {
-            //ecrire "+path[k].i\n"
-            printf("%c %u\n", (char) ADD, path[k].i);
+
+	   //ecrire "+path[k].i\n"
+            printf("%c %u\n", (char) ADD, path[k].i);	   
             // recopier ligne path[k].j du fichier 2
             printLine(path[k].j + 1, lines2, outputFile);
         } else if (path[k].operation == DEL) {
@@ -371,7 +372,7 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
     struct operation path[nbLines1 + nbLines2 + 2];
     //regrouper Top et path??
     int ind = buildPath(nbLines1, nbLines2, Top, path);
-    printPatch(path, lines2, outputFile, ind);
+    printPatch(path, lines2, outputFile, ind, nbLines1);
     return 0;
 
 
