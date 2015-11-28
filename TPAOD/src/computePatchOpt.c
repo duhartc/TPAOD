@@ -145,12 +145,15 @@ bool egalite(uint32_t i, uint32_t j, struct line *lines1, struct line *lines2, F
 }
 
 /*renvoie f(i,j) selon l'équation de Bellman*/
-uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab, enum op **top, struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile, uint32_t minCol) {
+uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab, enum op **top, struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile) {
     uint32_t *s = malloc(sizeof (uint32_t));
     enum op opmin;
 
     uint32_t m = 10 + tab[i - 1][j];
-    m = min(minCol, m, DELM, DEL, &opmin);
+    //m = min(minCol, m, DELM, DEL, &opmin);
+    for (uint32_t k = 2; k <= i; k++) {
+        m = min(15 + tab[i - k][j], m, DELM, DEL, &opmin);
+    };
     m = min(m, 10 + getNbCar(j, lines2, s) + tab[i][j - 1], opmin, ADD, &opmin);
     m = min(m, 10 + getNbCar(j, lines2, s) + tab[i - 1][j - 1], opmin, SUBS, &opmin);
 
@@ -333,13 +336,13 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
         Top[0][j] = ADD;
     }
 
-    uint32_t minCol;
-    uint32_t pos = 0;
+    //uint32_t minCol;
+    //uint32_t pos = 0;
     for (uint32_t j = 1; j < nbLines2 + 1; j++) {
-        minColonne(15, Tab[0][j], 0, j, &minCol, &pos);
+        //minColonne(15, Tab[0][j], 0, j, &minCol, &pos);
         for (uint32_t i = 1; i < nbLines1 + 1; i++) {
-            minColonne(Tab[i][j], minCol, j, pos, &minCol, &pos);
-            Tab[i][j] = minimum(i, j, Tab, Top, lines1, lines2, inputFile, outputFile, minCol);
+            //minColonne(Tab[i][j], minCol, j, pos, &minCol, &pos);
+            Tab[i][j] = minimum(i, j, Tab, Top, lines1, lines2, inputFile, outputFile);
             //printf("%c | ", (char) Top[i][j]);
         }
         //printf("\n");
