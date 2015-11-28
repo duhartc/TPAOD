@@ -283,7 +283,7 @@ void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, 
             // si deletion simple
             if (k == 0 || path[k - 1].operation != DEL) {
                 // ecrire "dpath[k]\n"
-                printf("%c %u\n", (char) DEL, path[k].i);
+                printf("%c %u\n", (char) DEL, path[k].i+1);
             } else {
                 int compteurdel = 1;
                 while ((k - compteurdel) >= 0 && (path[k - compteurdel].operation == DEL)){
