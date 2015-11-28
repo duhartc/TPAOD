@@ -264,7 +264,7 @@ void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, 
         // si substitution
         if (path[k].operation == SUBS) {
             //ecrire "+path[k].i\n"
-            printf("%c %u\n", (char) SUBS, path[k].i);
+            printf("%c %u\n", (char) SUBS, path[k].i+1);
             // recopier ligne path[k].j du fichier 2 
             printLine(path[k].j + 1, lines2, outputFile);
         }            // si addition
@@ -280,12 +280,13 @@ void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, 
                 printf("%c %u\n", (char) DEL, path[k].i);
             } else {
                 int compteurdel = 1;
-                while ((k - compteurdel) >= 0 && (path[k - compteurdel].operation == DEL)) {
+                while ((k - compteurdel) >= 0 && (path[k - compteurdel].operation == DEL)){
                     compteurdel++;
-                    k += (1 - compteurdel);
+		}
                     //ecrire D path[k].i compteurdel \n 
-                    printf("%c %u %u\n", (char) DELM, path[k].i, compteurdel);
-                }
+                    printf("%c %u %u\n", (char) DELM, path[k].i+1, compteurdel);
+		    k += (1 - compteurdel);
+                
             }
         }
         // else=copie, on fait rien on passe a la case suivante
