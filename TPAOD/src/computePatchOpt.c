@@ -23,7 +23,7 @@ enum op {
     ADD = '+'
 };
 
-//#define min(a,b) ((a<=b)?a:b)
+//#define min2(a,b) ((a<=b)?a:b)
 
 int min(int a, int b, enum op opa, enum op opb, enum op *opmin) {
     if (a < b) {
@@ -46,11 +46,6 @@ struct operation {
     enum op operation;
     uint32_t i;
     uint32_t j;
-};
-
-struct minCol {
-    uint32_t pos; //position du minimum dans la colonne
-    uint32_t val; //valeur de ce minimum
 };
 
 struct line *initList() {
@@ -152,14 +147,12 @@ bool egalite(uint32_t i, uint32_t j, struct line *lines1, struct line *lines2, F
 }
 
 /*renvoie f(i,j) selon l'équation de Bellman*/
-uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab, enum op **top, struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile) {
+uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab, enum op **top, struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile, uint32_t minCol) {
     uint32_t *s = malloc(sizeof (uint32_t));
     enum op opmin;
 
     uint32_t m = 10 + tab[i - 1][j];
-    for (uint32_t k = 2; k <= i; k++) {
-        m = min(15 + tab[i - k][j], m, DELM, DEL, &opmin);
-    };
+    m = min(minCol, m, DELM, DEL, &opmin);
     m = min(m, 10 + getNbCar(j, lines2, s) + tab[i][j - 1], opmin, ADD, &opmin);
     m = min(m, 10 + getNbCar(j, lines2, s) + tab[i - 1][j - 1], opmin, SUBS, &opmin);
 
@@ -301,7 +294,15 @@ void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, 
     }
 }
 
-
+void minColonne(uint32_t a, uint32_t b, uint32_t posA, uint32_t posB, uint32_t *min, uint32_t *posmin) {
+    if (a < b) {
+        *min = a;
+        *posmin = posA;
+    } else {
+        *min = b;
+        *posmin = posB;
+    }
+}
 
 // TODO : gérer fichier videsur l'init de tab
 
@@ -329,8 +330,6 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
         Top[i] = malloc((nbLines2 + 1) * sizeof (enum op));
         assert(Top[i] != NULL);
     }
-    //stocke le minimum de chaque colonne de Tab
-    struct minCol *Tmin = malloc((nbLines2 + 1) * sizeof (struct minCol)); 
     
     /*Conditions initiales*/
     Tab[0][0] = 0;
@@ -352,10 +351,13 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
         //printf("la ligne %i de output contient %i car \n", j, getNbCar(j, lines2,s));
     }
 
-    
+    uint32_t minCol;
+    uint32_t pos = 0;
     for (uint32_t j = 1; j < nbLines2 + 1; j++) {
+        minColonne(15, Tab[0][j], 0, j, &minCol, &pos);
         for (uint32_t i = 1; i < nbLines1 + 1; i++) {
-            Tab[i][j] = minimum(i, j, Tab, Top, lines1, lines2, inputFile, outputFile);
+            minColonne(Tab[i][j], minCol, j, pos, &minCol, &pos);
+            Tab[i][j] = minimum(i, j, Tab, Top, lines1, lines2, inputFile, outputFile, minCol);
             //printf("%c | ", (char) Top[i][j]);
         }
         //printf("\n");
