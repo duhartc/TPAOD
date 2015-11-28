@@ -48,6 +48,11 @@ struct operation {
     uint32_t j;
 };
 
+struct minCol {
+    uint32_t pos; //position du minimum dans la colonne
+    uint32_t val; //valeur de ce minimum
+};
+
 struct line *initList() {
     struct line *lines = malloc(sizeof (struct line));
     if (lines) /* si l'allocation a réussi */ {
@@ -178,26 +183,26 @@ int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) 
         if (Top[i][j] == DEL) {
             path[ind].operation = DEL;
             i--;
-            printf("DEL HAUT!! \n");
+            //printf("DEL HAUT!! \n");
         }
             //ADDITION
         else if (Top[i][j] == ADD) {
             path[ind].operation = ADD;
             j--;
-            printf("ADD GAUCHE\n");
+            //printf("ADD GAUCHE\n");
         }
             //COPIE
         else if (Top[i][j] == COPIE) {
             path[ind].operation = COPIE;
             i--;
             j--;
-            printf("copie DIAG \n ");
+            //printf("copie DIAG \n ");
         }            //SUBS
         else {
             path[ind].operation = SUBS;
             i--;
             j--;
-            printf("subs DIAG \n");
+            //printf("subs DIAG \n");
         }
 
 
@@ -214,7 +219,7 @@ int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) 
             path[ind].j = j;
             ind++;
             j--;
-            printf("add finale GAUCHE \n");
+            //printf("add finale GAUCHE \n");
         }
     }        // si il ne reste que des deletions
     else if (j == 0 && i != 0) {
@@ -224,15 +229,15 @@ int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) 
             path[ind].j = j;
             ind++;
             i--;
-            printf("del finale HAUT \n");
+            //printf("del finale HAUT \n");
         }
     }
 
     // TO DO : parcouri le tableau et écire dans le fichier les op corespondantes
     //         ne pas oublier que quand on a un del, il faut vérifie si on a un autre del apres pour faire une del multiple
-    printf("END BUILD PATH \n");
+    //printf("END BUILD PATH \n");
 
-    printf("PATH \n");
+    //printf("PATH \n");
 
     return ind;
     //AFFICAGE DU PATH
@@ -251,7 +256,7 @@ void printLine(int numLine, struct line *lines, FILE* outputFile) {
     fseek(outputFile, somme, SEEK_SET); // on part du début du fichier à chaque fois (pas top) 
     for (int i = 0; i < nbCar; i++) {
         c = fgetc(outputFile);
-        printf("%c", c); // attention: on affiche EOF
+        if (c!=EOF) printf("%c", c); // on pas affiche EOF
     }
 }
 
@@ -309,7 +314,7 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
     struct line *lines2 = initList();
     uint32_t nbLines1 = listLines(lines1, inputFile);
     uint32_t nbLines2 = listLines(lines2, outputFile);
-    printf("L1=%i , L2=%i \n", nbLines1, nbLines2);
+    //printf("L1=%i , L2=%i \n", nbLines1, nbLines2);
 
     /*Allocation de tableaux */
     /*pour le coût :*/
@@ -324,8 +329,9 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
         Top[i] = malloc((nbLines2 + 1) * sizeof (enum op));
         assert(Top[i] != NULL);
     }
-
-
+    //stocke le minimum de chaque colonne de Tab
+    struct minCol *Tmin = malloc((nbLines2 + 1) * sizeof (struct minCol)); 
+    
     /*Conditions initiales*/
     Tab[0][0] = 0;
     Top[0][0] = COPIE; //non significatif
@@ -346,26 +352,27 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
         //printf("la ligne %i de output contient %i car \n", j, getNbCar(j, lines2,s));
     }
 
-    for (uint32_t i = 1; i < nbLines1 + 1; i++) {
-        for (uint32_t j = 1; j < nbLines2 + 1; j++) {
+    
+    for (uint32_t j = 1; j < nbLines2 + 1; j++) {
+        for (uint32_t i = 1; i < nbLines1 + 1; i++) {
             Tab[i][j] = minimum(i, j, Tab, Top, lines1, lines2, inputFile, outputFile);
-            printf("%c | ", (char) Top[i][j]);
+            //printf("%c | ", (char) Top[i][j]);
         }
-        printf("\n");
+        //printf("\n");
     }
 
 
     //AFFICHAGE TABLEAU
-    printf("TAB : \n");
-    for (uint32_t i = 0; i < nbLines1 + 1; i++) {
-        for (uint32_t j = 0; j < nbLines2 + 1; j++) {
-            printf(" %i     ", Tab[i][j]);
-        }
-        printf("\n");
-    };
+    //printf("TAB : \n");
+    //for (uint32_t i = 0; i < nbLines1 + 1; i++) {
+        //for (uint32_t j = 0; j < nbLines2 + 1; j++) {
+            //printf(" %i     ", Tab[i][j]);
+        //}
+        //printf("\n");
+    //};
 
 
-    printf("cout minimal Tab[%i][%i]= %i \n", nbLines1, nbLines2, Tab[nbLines1][nbLines2]);
+    //printf("cout minimal Tab[%i][%i]= %i \n", nbLines1, nbLines2, Tab[nbLines1][nbLines2]);
 
     // TO DO : stocker le chemin en remontant dans le tableau
     // générer le patch 
@@ -401,10 +408,10 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     //if (patch==NULL) {fprintf (stderr, "!!!!! Error opening patch !!!!!\n"); exit(EXIT_FAILURE);}
-    printf("OUVERTURE FICHIERS \n");
-    printf("COMPUTE PATCH \n ");
+    //printf("OUVERTURE FICHIERS \n");
+    //printf("COMPUTE PATCH \n ");
     computePatchOpt(inputFile, outputFile);
-    printf("END COMPUTE PATCH \n ");
+    //printf("END COMPUTE PATCH \n ");
     fclose(inputFile);
     fclose(outputFile);
     //fclose(patch);
