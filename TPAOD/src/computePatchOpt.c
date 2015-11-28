@@ -98,8 +98,7 @@ uint32_t listLines(struct line *lines, FILE *file) {
     return nbLines;
 }
 
-/* renvoie le nb de caractères de la ligne i*/
-// TO DO : lever une exception si i> nb lignes du fichier ? 
+/** renvoie le nb de caractères de la ligne i */
 
 uint32_t getNbCar(uint32_t i, struct line *lines, uint32_t *somme) {
     *somme = 0;
@@ -137,8 +136,7 @@ bool egalite(uint32_t i, uint32_t j, struct line *lines1, struct line *lines2, F
     uint32_t nbCarI = getNbCar(i, lines1, &s1);
     uint32_t nbCarJ = getNbCar(j, lines2, &s2);
     if (nbCarI == nbCarJ) {
-        // TO DO : comparer le contenu des deux lignes
-        fseek(inputFile, s1, SEEK_SET);
+         fseek(inputFile, s1, SEEK_SET);
         fseek(outputFile, s2, SEEK_SET);
         return compareLigne(inputFile, outputFile, nbCarI);
     }
@@ -176,26 +174,26 @@ int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) 
         if (Top[i][j] == DEL) {
             path[ind].operation = DEL;
             i--;
-            //printf("DEL HAUT!! \n");
+            
         }
             //ADDITION
         else if (Top[i][j] == ADD) {
             path[ind].operation = ADD;
             j--;
-            //printf("ADD GAUCHE\n");
+            
         }
             //COPIE
         else if (Top[i][j] == COPIE) {
             path[ind].operation = COPIE;
             i--;
             j--;
-            //printf("copie DIAG \n ");
+            
         }            //SUBS
         else {
             path[ind].operation = SUBS;
             i--;
             j--;
-            //printf("subs DIAG \n");
+            
         }
 
 
@@ -212,7 +210,7 @@ int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) 
             path[ind].j = j;
             ind++;
             j--;
-            //printf("add finale GAUCHE \n");
+          
         }
     }        // si il ne reste que des deletions
     else if (j == 0 && i != 0) {
@@ -222,22 +220,13 @@ int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) 
             path[ind].j = j;
             ind++;
             i--;
-            //printf("del finale HAUT \n");
+   
         }
     }
 
-    // TO DO : parcouri le tableau et écire dans le fichier les op corespondantes
-    //         ne pas oublier que quand on a un del, il faut vérifie si on a un autre del apres pour faire une del multiple
-    //printf("END BUILD PATH \n");
-
-    //printf("PATH \n");
 
     return ind;
-    //AFFICAGE DU PATH
-    /* for(uint32_t k =0; k<ind; k++ ){ */
-    /*   printf("k=%i, i=%i , j=%i \n", k,path[k].i, path[k].j ); */
-    /* }; */
-
+  
 
 }
 
@@ -261,28 +250,23 @@ void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, 
 
         // si substitution
         if (path[k].operation == SUBS) {
-            //ecrire "+path[k].i\n"
+           
             printf("%c %u\n", (char) SUBS, path[k].i+1);
-            // recopier ligne path[k].j du fichier 2 
+         
             printLine(path[k].j + 1, lines2, outputFile);
         }            // si addition
-        else if (path[k].operation == ADD) {
-
-	   //ecrire "+path[k].i\n"
-            printf("%c %u\n", (char) ADD, path[k].i);	   
-            // recopier ligne path[k].j du fichier 2
+        else if (path[k].operation == ADD) {	   
+            printf("%c %u\n", (char) ADD, path[k].i); 
             printLine(path[k].j + 1, lines2, outputFile);
         } else if (path[k].operation == DEL) {
             // si deletion simple
             if (k == 0 || path[k - 1].operation != DEL) {
-                // ecrire "dpath[k]\n"
-                printf("%c %u\n", (char) DEL, path[k].i+1);
+                      printf("%c %u\n", (char) DEL, path[k].i+1);
             } else {
                 int compteurdel = 1;
                 while ((k - compteurdel) >= 0 && (path[k - compteurdel].operation == DEL)){
                     compteurdel++;
 		}
-                    //ecrire D path[k].i compteurdel \n 
                     printf("%c %u %u\n", (char) DELM, path[k].i+1, compteurdel);
 		    k += (1 - compteurdel);
                 
@@ -290,7 +274,7 @@ void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, 
         }
         // else=copie, on fait rien on passe a la case suivante
         k--;
-        //printf("k=%i", k); 
+        
     }
 }
 
@@ -304,7 +288,7 @@ void minColonne(uint32_t a, uint32_t b, uint32_t posA, uint32_t posB, uint32_t *
     }
 }
 
-// TODO : gérer fichier videsur l'init de tab
+
 
 uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
     uint32_t *s = malloc(sizeof (uint32_t));
@@ -315,7 +299,7 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
     struct line *lines2 = initList();
     uint32_t nbLines1 = listLines(lines1, inputFile);
     uint32_t nbLines2 = listLines(lines2, outputFile);
-    //printf("L1=%i , L2=%i \n", nbLines1, nbLines2);
+ 
 
     /*Allocation de tableaux */
     /*pour le coût :*/
@@ -339,7 +323,6 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
 
 
     for (uint32_t i = 2; i < nbLines1 + 1; i++) {
-        // fprintf(stderr,"la ligne %i de input contient %i car \n", i, getNbCar(i, lines1,s));
         Tab[i][0] = 15;
         Top[i][0] = DELM;
     }
@@ -348,7 +331,6 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
     for (uint32_t j = 1; j < nbLines2 + 1; j++) {
         Tab[0][j] = 10 + getNbCar(j, lines2, s) + Tab[0][j - 1];
         Top[0][j] = ADD;
-        //printf("la ligne %i de output contient %i car \n", j, getNbCar(j, lines2,s));
     }
 
     uint32_t minCol;
@@ -363,24 +345,12 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
         //printf("\n");
     }
 
-
-    //AFFICHAGE TABLEAU
-    //printf("TAB : \n");
-    //for (uint32_t i = 0; i < nbLines1 + 1; i++) {
-        //for (uint32_t j = 0; j < nbLines2 + 1; j++) {
-            //printf(" %i     ", Tab[i][j]);
-        //}
-        //printf("\n");
-    //};
-
-
     //printf("cout minimal Tab[%i][%i]= %i \n", nbLines1, nbLines2, Tab[nbLines1][nbLines2]);
 
-    // TO DO : stocker le chemin en remontant dans le tableau
+ 
     // générer le patch 
     struct operation path[nbLines1 + nbLines2 + 2];
-    //regrouper Top et path??
-    int ind = buildPath(nbLines1, nbLines2, Top, path);
+     int ind = buildPath(nbLines1, nbLines2, Top, path);
     printPatch(path, lines2, outputFile, ind);
     return 0;
 
@@ -389,17 +359,16 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
 
 int main(int argc, char *argv[]) {
     FILE *inputFile;
-    FILE *outputFile;
-    //FILE *patch ; 
+    FILE *outputFile; 
 
-    if (argc < 4) {
-        fprintf(stderr, "!!!!! Usage: ./computePatchOpt inputFile outputFile patch !!!!!\n");
+    if (argc < 3) {
+        fprintf(stderr, "!!!!! Usage: ./computePatchOpt inputFile outputFile !!!!!\n");
         exit(EXIT_FAILURE); /* indicate failure.*/
     }
 
     inputFile = fopen(argv[1], "r");
     outputFile = fopen(argv[2], "r");
-    //patch=fopen(argv[3], "w+");
+
 
     if (inputFile == NULL) {
         fprintf(stderr, "!!!!! Error opening inputFile !!!!! \n");
@@ -409,14 +378,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "!!!!! Error opening outputFile !!!!!\n");
         exit(EXIT_FAILURE);
     }
-    //if (patch==NULL) {fprintf (stderr, "!!!!! Error opening patch !!!!!\n"); exit(EXIT_FAILURE);}
-    //printf("OUVERTURE FICHIERS \n");
-    //printf("COMPUTE PATCH \n ");
     computePatchOpt(inputFile, outputFile);
-    //printf("END COMPUTE PATCH \n ");
     fclose(inputFile);
     fclose(outputFile);
-    //fclose(patch);
-    //FREEEEEEEEEEEEEEE TAS RIEN COMPRIS
     return 0;
 }
