@@ -19,6 +19,9 @@ all: binary report doc
 
 $(BINDIR)/applyPatch: $(CSOURCE)
 	$(CC) $(CFLAGS)  $^ -o $@
+	
+$(BINDIR)/computePatchOpt: $(CSOURCE)
+	$(CC) $(CFLAGS)  $^ -o $@
 
 %.pdf: $(LATEXSOURCE)
 	$(LATEXC) -output-directory $(REPORTDIR) $^ 
@@ -26,12 +29,12 @@ $(BINDIR)/applyPatch: $(CSOURCE)
 $(DOCDIR)/index.html: $(SRCDIR)/Doxyfile $(CSOURCE) 
 	$(DOCC) $(SRCDIR)/Doxyfile
 
-binary: $(BINDIR)/applyPatch
+binary: $(BINDIR)/applyPatch $(BINDIR)/computePatchOpt
 
 report: $(PDF) 
 
 doc: $(DOCDIR)/index.html
-
+	
 clean:
 	rm -rf $(DOCDIR) $(BINDIR)/* $(REPORTDIR)/*.aux $(REPORTDIR)/*.log  $(REPORTDIR)/rapport.pdf 
 
