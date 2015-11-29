@@ -1,7 +1,7 @@
 CC=gcc
 LATEXC=pdflatex
 DOCC=doxygen
-CFLAGS=-g -std=c99 -Wall
+CFLAGS=-g -std=c99 -Wall -O3
 
 REFDIR=.
 SRCDIR=$(REFDIR)/src
