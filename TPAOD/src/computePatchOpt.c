@@ -93,6 +93,8 @@ void freeTab(uint32_t **Tab,enum op **Top, uint32_t L1, uint32_t L2){
     free(Tab[i]); 
     free(Top[i]);
   }
+  free(Tab); 
+  free(Top); 
 }
 
 
@@ -205,7 +207,7 @@ uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab, enum op **top, struct l
         *minCol = m;
         *posMinCol = i;
     }
-    
+    free(s);
     return m;
 }
 
@@ -416,6 +418,7 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
     freeList(tabLines1); 
     freeList(tabLines2); 
     freeTab(Tab,Top,  nbLines1, nbLines2);
+    free(tPosMinCol);
     return 0;
 
 
