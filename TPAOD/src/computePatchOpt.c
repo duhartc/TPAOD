@@ -37,6 +37,7 @@ int min(int a, int b, enum op opa, enum op opb, enum op *opmin) {
 
 struct line {
     uint32_t numLine;
+    uint64_t posLine;
     uint32_t nbChar;
     struct line *nxt;
 
@@ -46,6 +47,7 @@ struct operation {
     enum op operation;
     uint32_t i;
     uint32_t j;
+    uint32_t originalI;
 };
 
 struct line *initList() {
@@ -53,25 +55,28 @@ struct line *initList() {
     if (lines) /* si l'allocation a réussi */ {
         lines->numLine = 0; /* la ligne 0 correspond à une ligne virtuelle constituant le début du fichier*/
         lines->nbChar = 0;
+        lines->posLine = 0;
         lines->nxt = NULL; /* affectation du champ nxt à la liste vide */
     }
     return lines; /* retour de la liste (correctement allouée et affectée ou NULL) */
 }
 
-void addNext(struct line *lines, uint32_t nbChar, uint32_t num) {
+void addNext(struct line *lines, uint32_t nbChar, uint32_t num, uint64_t posLine) {
     lines->nxt = malloc(sizeof (struct line));
     if (lines->nxt) {
         lines->nxt->numLine = num;
         lines->nxt->nbChar = nbChar;
+        lines->nxt->posLine = posLine;
         lines->nxt->nxt = NULL;
     }
     // sinon problème de malloc
 }
 
-uint32_t listLines(struct line *lines, FILE *file) {
+struct line **listLines(struct line *lines, uint32_t *count, FILE *file) {
     int c;
     uint32_t nbLines = 0;
     uint32_t nbCharPerLine = 0;
+    uint64_t actualPos = ftell(file);
     uint32_t c2 = '\0';
     struct line *current = lines;
 
@@ -80,9 +85,10 @@ uint32_t listLines(struct line *lines, FILE *file) {
         if (c == '\n') {
             nbCharPerLine++;
             nbLines++;
-            addNext(current, nbCharPerLine, nbLines);
+            addNext(current, nbCharPerLine, nbLines, actualPos);
             nbCharPerLine = 0;
             current = current->nxt;
+            actualPos = ftell(file);
         } else {
             c2 = c;
             nbCharPerLine++;
@@ -92,25 +98,31 @@ uint32_t listLines(struct line *lines, FILE *file) {
     /* Ici, c2 est égal au caractère juste avant le EOF. */
     if (c2 != '\n') {
         nbLines++; /* Dernière ligne non finie */
-        addNext(current, nbCharPerLine + 1, nbLines);
+        addNext(current, nbCharPerLine + 1, nbLines, actualPos);
+    }
+    
+    struct line **tab = malloc(sizeof(struct line*)*(nbLines + 1));
+    current = lines;
+    for (uint32_t i = 0; i < nbLines + 1; i++) {
+        tab[i] = current;
+        current = current->nxt;
     }
 
-    return nbLines;
+    *count = nbLines;
+    return tab;
 }
 
 /** renvoie le nb de caractères de la ligne i */
 
-uint32_t getNbCar(uint32_t i, struct line *lines, uint32_t *somme) {
-    *somme = 0;
-    struct line *current = lines;
-    uint32_t k = 0;
-    while (k != i) {
-        *somme += current->nbChar;
-        current = current->nxt;
-        k++;
-    }
+uint32_t getNbCar(uint32_t i, struct line **lines, uint32_t *somme) {
+    //struct line *current = lines;
+    //for (uint32_t k = 0; k < i; k++) {
+    //    current = current->nxt;
+    //}
+    
+    *somme = lines[i]->posLine;
 
-    return current->nbChar;
+    return lines[i]->nbChar;
 }
 
 bool compareLigne(FILE *inputFile, FILE *outputFile, uint32_t nbCar) {
@@ -129,7 +141,7 @@ bool compareLigne(FILE *inputFile, FILE *outputFile, uint32_t nbCar) {
     return true;
 }
 
-bool egalite(uint32_t i, uint32_t j, struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile) {
+bool egalite(uint32_t i, uint32_t j, struct line **lines1, struct line **lines2, FILE *inputFile, FILE *outputFile) {
     /* s1 & s2 contiennent respectivement le nombre de caractères avant la ligne i (j) dans le fichier 1 (2)*/
     uint32_t s1 = 0;
     uint32_t s2 = 0;
@@ -145,28 +157,37 @@ bool egalite(uint32_t i, uint32_t j, struct line *lines1, struct line *lines2, F
 }
 
 /*renvoie f(i,j) selon l'équation de Bellman*/
-uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab, enum op **top, struct line *lines1, struct line *lines2, FILE *inputFile, FILE *outputFile) {
+uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab, enum op **top, struct line **lines1, struct line **lines2, FILE *inputFile, FILE *outputFile, uint32_t *minCol, uint32_t *posMinCol) {
     uint32_t *s = malloc(sizeof (uint32_t));
     enum op opmin;
 
     uint32_t m = 10 + tab[i - 1][j];
-    //m = min(minCol, m, DELM, DEL, &opmin);
-    for (uint32_t k = 2; k <= i; k++) {
-        m = min(15 + tab[i - k][j], m, DELM, DEL, &opmin);
-    };
+    m = min(15 + *minCol, m, DELM, DEL, &opmin);
+    //for (uint32_t k = 2; k <= i; k++) {
+    //    m = min(15 + tab[i - k][j], m, DELM, DEL, &opmin);
+    //};
     m = min(m, 10 + getNbCar(j, lines2, s) + tab[i][j - 1], opmin, ADD, &opmin);
     m = min(m, 10 + getNbCar(j, lines2, s) + tab[i - 1][j - 1], opmin, SUBS, &opmin);
 
     if (egalite(i, j, lines1, lines2, inputFile, outputFile)) {
-        //printf("ligne %i de input et %i de output égales \n", i,j);
+        //fprintf(stderr, "ligne %i de input et %i de output égales \n", i,j);
         m = min(m, tab[i - 1][j - 1], opmin, COPIE, &opmin);
+    } else {
+        //fprintf(stderr, "ligne %i de input et %i de output PAS égales \n", i,j);
     }
     top[i][j] = opmin;
+    
+    if (m < *minCol) {
+        *minCol = m;
+        *posMinCol = i;
+    }
+    
     return m;
 }
 
-int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) {
+int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[], uint32_t tMin[]) {
 
+    fprintf(stderr, "Ca build ma gueule\n");
     int i = L1;
     int j = L2;
 
@@ -191,7 +212,13 @@ int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) 
             i--;
             j--;
             
-        }            //SUBS
+        }
+        else if (Top[i][j] == DELM) {
+            path[ind].operation = DELM;
+            path[ind].originalI = i;
+            i = tMin[j];
+        }
+        //SUBS
         else {
             path[ind].operation = SUBS;
             i--;
@@ -205,7 +232,7 @@ int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) 
         ind++;
     }
 
-    // si il ne reste que des additions à faire
+    // s'il ne reste que des additions à faire
     if (i == 0 && j != 0) {
         while (j != 0) {
             path[ind].operation = ADD;
@@ -228,12 +255,12 @@ int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[]) 
     }
 
 
-    return ind;
+    return ind - 1;
   
 
 }
 
-void printLine(int numLine, struct line *lines, FILE* outputFile) {
+void printLine(int numLine, struct line **lines, FILE* outputFile) {
     int nbCar;
     char c;
     uint32_t somme;
@@ -245,7 +272,7 @@ void printLine(int numLine, struct line *lines, FILE* outputFile) {
     }
 }
 
-void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, int ind) {
+void printPatch(struct operation path[], struct line **lines2, FILE* outputFile, int ind, uint32_t tMin[]) {
     // parcours du tableau et écriture dans le patch
     rewind(outputFile); //on remet le pointeur au debut du fichier
     int k = ind;
@@ -263,20 +290,22 @@ void printPatch(struct operation path[], struct line *lines2, FILE* outputFile, 
             printLine(path[k].j + 1, lines2, outputFile);
         } else if (path[k].operation == DEL) {
             // si deletion simple
-            if (k == 0 || path[k - 1].operation != DEL) {
+            //if (k == 0 || path[k - 1].operation != DEL) {
                       printf("%c %u\n", (char) DEL, path[k].i+1);
-            } else {
-                int compteurdel = 1;
-                while ((k - compteurdel) >= 0 && (path[k - compteurdel].operation == DEL)){
-                    compteurdel++;
-		}
+            //}
+        }
+        else if (path[k].operation == DELM) {
+                int compteurdel = path[k].originalI - tMin[path[k].j];
+                //while ((k - compteurdel) >= 0 && (path[k - compteurdel].operation == DEL)){
+                    //compteurdel++;
+		//}
                     printf("%c %u %u\n", (char) DELM, path[k].i+1, compteurdel);
-		    k += (1 - compteurdel);
-                
-            }
+		    //k -= compteurdel;
+                    //k++;
         }
         // else=copie, on fait rien on passe a la case suivante
         k--;
+        //fprintf(stderr, "%i\n", k);
         
     }
 }
@@ -300,8 +329,9 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
        le nombre de caractères de chaque ligne */
     struct line *lines1 = initList();
     struct line *lines2 = initList();
-    uint32_t nbLines1 = listLines(lines1, inputFile);
-    uint32_t nbLines2 = listLines(lines2, outputFile);
+    uint32_t nbLines1, nbLines2;
+    struct line **tabLines1 = listLines(lines1, &nbLines1, inputFile);
+    struct line **tabLines2 = listLines(lines2, &nbLines2, outputFile);
  
 
     /*Allocation de tableaux */
@@ -332,29 +362,31 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
 
 
     for (uint32_t j = 1; j < nbLines2 + 1; j++) {
-        Tab[0][j] = 10 + getNbCar(j, lines2, s) + Tab[0][j - 1];
+        Tab[0][j] = 10 + getNbCar(j, tabLines2, s) + Tab[0][j - 1];
         Top[0][j] = ADD;
     }
-
-    //uint32_t minCol;
-    //uint32_t pos = 0;
+    
+    uint32_t *tPosMinCol = malloc((nbLines2 + 1) * sizeof (uint32_t));
+    uint32_t minCol;
     for (uint32_t j = 1; j < nbLines2 + 1; j++) {
+        minCol= Tab[0][j];
+        tPosMinCol[j] = 0;
         //minColonne(15, Tab[0][j], 0, j, &minCol, &pos);
         for (uint32_t i = 1; i < nbLines1 + 1; i++) {
             //minColonne(Tab[i][j], minCol, j, pos, &minCol, &pos);
-            Tab[i][j] = minimum(i, j, Tab, Top, lines1, lines2, inputFile, outputFile);
-            //printf("%c | ", (char) Top[i][j]);
+            Tab[i][j] = minimum(i, j, Tab, Top, tabLines1, tabLines2, inputFile, outputFile, &minCol, &tPosMinCol[j]);
+            //fprintf(stderr, "%c | ", (char) Top[i][j]);
         }
-        //printf("\n");
+        //fprintf(stderr, "\n");
     }
 
-    //printf("cout minimal Tab[%i][%i]= %i \n", nbLines1, nbLines2, Tab[nbLines1][nbLines2]);
+    fprintf(stderr, "cout minimal Tab[%i][%i]= %i \n", nbLines1, nbLines2, Tab[nbLines1][nbLines2]);
 
  
     // générer le patch 
     struct operation path[nbLines1 + nbLines2 + 2];
-     int ind = buildPath(nbLines1, nbLines2, Top, path);
-    printPatch(path, lines2, outputFile, ind);
+     int ind = buildPath(nbLines1, nbLines2, Top, path, tPosMinCol);
+    printPatch(path, tabLines2, outputFile, ind, tPosMinCol);
     return 0;
 
 
