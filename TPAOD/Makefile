@@ -1,7 +1,7 @@
 CC=gcc
 LATEXC=pdflatex
 DOCC=doxygen
-CFLAGS=-g -Wall -O3
+CFLAGS=-g -std=c99 -Wall
 
 REFDIR=.
 SRCDIR=$(REFDIR)/src
@@ -20,7 +20,7 @@ all: binary report doc
 $(BINDIR)/applyPatch: $(CSOURCE)
 	$(CC) $(CFLAGS)  $^ -o $@
 	
-$(BINDIR)/computePatchOpt: $(CSOURCE)
+$(BINDIR)/computePatchOpt: $(SRCDIR)/computePatchOpt.c
 	$(CC) $(CFLAGS)  $^ -o $@
 
 %.pdf: $(LATEXSOURCE)
