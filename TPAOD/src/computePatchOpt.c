@@ -211,7 +211,6 @@ uint32_t minimum(uint32_t i, uint32_t j, uint32_t **tab, enum op **top, struct l
 
 int buildPath(uint32_t L1, uint32_t L2, enum op **Top, struct operation path[], uint32_t tMin[]) {
 
-    fprintf(stderr, "Ca build ma gueule\n");
     int i = L1;
     int j = L2;
 
