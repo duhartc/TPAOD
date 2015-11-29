@@ -515,7 +515,8 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
     struct operation path[nbLines1 + nbLines2 + 2];
      int ind = buildPath(nbLines1, nbLines2, Top, path, tPosMinCol);
     printPatch(path, tabLines2, outputFile, ind, tPosMinCol);
-
+    //fprintf(stderr,"%u", Tab[nbLines1][nbLines2]);
+    
     // Libération de la mémoire
     free(s); 
     freeList(tabLines1); 
