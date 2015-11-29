@@ -72,6 +72,30 @@ void addNext(struct line *lines, uint32_t nbChar, uint32_t num, uint64_t posLine
     // sinon problème de malloc
 }
 
+
+void  freeList(struct line **tabLines)
+{
+    struct line *tmp = tabLines[0];
+    struct line *tmpnxt;
+ 
+    /* Tant que l'on n'est pas au bout de la liste */
+    while(tmp != NULL)
+    {    tmpnxt = tmp->nxt;      
+      free(tmp);
+        tmp = tmpnxt;
+    }
+    
+    free(tabLines);
+}
+
+void freeTab(uint32_t **Tab,enum op **Top, uint32_t L1, uint32_t L2){
+  for (uint32_t i=0; i<L1+1; i++){
+    free(Tab[i]); 
+    free(Top[i]);
+  }
+}
+
+
 struct line **listLines(struct line *lines, uint32_t *count, FILE *file) {
     int c;
     uint32_t nbLines = 0;
@@ -387,6 +411,12 @@ uint32_t computePatchOpt(FILE *inputFile, FILE *outputFile) {
     struct operation path[nbLines1 + nbLines2 + 2];
      int ind = buildPath(nbLines1, nbLines2, Top, path, tPosMinCol);
     printPatch(path, tabLines2, outputFile, ind, tPosMinCol);
+
+    // Libération de la mémoire
+    free(s); 
+    freeList(tabLines1); 
+    freeList(tabLines2); 
+    freeTab(Tab,Top,  nbLines1, nbLines2);
     return 0;
 
 
