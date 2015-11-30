@@ -32,7 +32,7 @@ DUHART Claudia (IF Groupe 1)
 Nous avons choisi d'implémenter la méthode itérative en stockant tous les coûts $V(i,j)$ dans un tableau. \\
 Dans un premier temps, on parcourt les fichiers $F_1$ et $F_2$ pour stocker dans deux listes chaînées (puis des tableaux)  les données des fichiers ce qui permet entre autres de sauvegarder le nombre de caractères associé à chaque ligne. 
 Ensuite, on calcule les coûts $V(i,j)$ qu'on stocke dans un tableau, ainsi que les opérations nécessaires pour arriver aux lignes i et j dans un tableau $Top$. \\
-Un parcours de ces tableaux nous permet ensuite, via de nouveaux tableaux, de reconstruire le patch de coût minimal, et de l'afficher sur la sortie standard. \\
+Un parcours de ces tableaux nous permet ensuite, via de nouveaux tableaux, de reconstruire le patch de coût minimal, et de l'afficher sur la sortie standard. On affiche également sur la sortie standard le cpût du patch minimal trouvé. \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Analyse du coût théorique (3 points)}
 
@@ -171,7 +171,7 @@ V(n,m)= min ~~(~~  &  V(n-1,m-1), \\
 & min_{i\in [2,n]} (6+ V(n-i,m)) ~~~)
 \end{align*}
 
-avec $L(F_2(j))$ le nombre de caractères de la ligne j du fichier $F_2$, en comptant le caractère de fin de ligne "\backslash n" \\
+avec $L(F_2(j))$ le nombre de caractères de la ligne j du fichier $F_2$, en comptant le caractère de fin de ligne  \\
 
 Si l'on recopie une ligne, alors ça ne coûte rien et on est ramené au même problème, sur des fichiers de longueur $n-1$ et $m-1$. \\
 Si l'on ajoute une ligne, on écrit dans le patch $4+L(F_2(j))$ caractères et on est ramené au même problème sur des fichiers de longueur $n$ et $m-1$. \\
