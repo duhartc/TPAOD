@@ -17,76 +17,81 @@
 
 \title{Rapport de TP 4MMAOD : Génération de patch optimal}
 \author{
-NOM Prénom étudiant$_1$ (groupe étudiant$_1$) 
-\\ NOM Prénom étudiant$_2$ (groupe étudiant$_2$) 
+DUHART Claudia (IF Groupe 1) 
+\\ MARTINEZ Cléa (MMIS Groupe 1) 
 }
 
 \begin{document}
 
 \maketitle
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\paragraph{\em Préambule}
-{\em \begin{itemize} 
-   \item Compléter ce patron de rapport en supprimant toutes les phrases en italique\,: elles ne doivent pas apparaître dans le rapport pdf.
-   \item Il sera attribué {\bf 1 point} pour la qualité globale du rapport\,: présentation, concision et clarté de l'argumentation.
-\end{itemize}
-}
+\parindent 0 mm 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Principe de notre  programme (1 point)}
-{\em Mettre ici une explication brève du principe de votre programme en  précisant la méthode implantée (récursive, itérative) et les
-choix effectués (notamment pour l'ordonnancement des instructions).
-} 
 
+Nous avons choisi d'implémenter la méthode itérative en stockant tous les coûts $V(i,j)$ dans un tableau. \\
+Dans un premier temps, on parcourt les fichiers $F_1$ et $F_2$ pour stocker dans deux listes chaînées (puis des tableaux)  les données des fichiers ce qui permet entre autres de sauvegarder le nombre de caractères associé à chaque ligne. 
+Ensuite, on calcule les coûts $V(i,j)$ qu'on stocke dans un tableau, ainsi que les opérations nécessaires pour arriver aux lignes i et j dans un tableau $Top$. \\
+Un parcours de ces tableaux nous permet ensuite, via de nouveaux tableaux, de reconstruire le patch de coût minimal, et de l'afficher sur la sortie standard. \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Analyse du coût théorique (3 points)}
-{\em Donner ici l'analyse du coût théorique de votre programme en fonction des nombres $n_1$ et $n_2$ de lignes 
-et $c_1$ et $c_2$ de caractères des deux fichiers en entrée.
- Pour chaque coût, donner la formule qui le caractérise (en justifiant brièvement pourquoi cette formule correspond à votre programme), 
- puis l'ordre du coût en fonction de $n_1, n_2, c_1, c_2$ en notation $\Theta$ de préférence, sinon $O$.}
+
 
   \subsection{Nombre  d'opérations en pire cas\,: }
-    \paragraph{Justification\,: }
-    {\em La justification peut être par exemple de la forme: \\ 
-       "Le programme itératif contient les boucles $k_1=...$, $k_2= ...$ etc correspondant à la somme 
-      $$T(n_1, n_2, c_1, c_2) = \sum_{k_1=...}^{...} ... \sum ... + \sum_{i=...}^{...} ...$$ 
-      somme que nous avons calculée (ou majorée) par la technique de  ... " \\
-      ou  encore\,:  \\
-      "les appels récursifs du programme permettent de modéliser son coût par le système d'équations aux récurrences 
-      $$T(k_1, k_2) = ...  \mbox{~avec~les~conditions~initiales~....~} $$
-      Le coût indiqué est obtenu en résolvant ce système par la méthode de  .... "
-    } 
+  
+  Le nombre d'opérations en pire cas est en $O(n_1 n_2 + c_1c_2)$
+    \paragraph{Justification\,: \\ }
+    
+
+        La fonction \it initList \rm appelée  réalise $4$ affectations : $O(1)$ \\
+        La fonction \it getNbCar \rm fait un accès tableau et une affectation : $O(1)$ \\
+        La fonction \it minimum \rm fait appel à \it compareLignes \rm qui fait le nombre de caractères de la ligne fois un test d'égalité. 
+        
+        La fonction \it listLines \rm (appelée deux fois au total) fait $n$ appels à \it addNext \rm (fonction en $O(1)$ ) : $O(n)$ \\
+        La vérification de l'allocation des tableaux \it Tab/Top \rm fait $n_1$ tests d'égalité (car les tableaux sont de taille $n_1$). \\
+        Le remplissage des tableaux \it Tab et Top fait $n_1\times n_2$ (double boucle) appels à la fonction \it minimum : $O(c_1 \times c_2)$.\\
+        La fonction \it build path \rm fait dans le pire des cas $O(max(n_1,n_2))$ affectations. \\
+        La fonction \it printpath \rm fait au maximum $O(n_1+n_2)$ tests d'égalité  (car la taille du tableau path vaut $= n_1+n_2+2$ ) \\
+   
   \subsection{Place mémoire requise\,: }
-    \paragraph{Justification\,: }
+  
+  La place mémoire requise est en $O(n_1 \times n_2)$. 
+    \paragraph{Justification\,:  }
+    
+    On utilise deux tableaux de taille $(n_1+1)\times (n_2+1)$ (\it Tab \rm et \it Top \rm pour stocker les $V(i,j)$ et les opérations). \\
+    On utilise également un tableau de taille $n_1+n_2+2$ pour stocker les opérations conduisant à la construction d'un patch de coût minimal, puis un tableau contenant les minimums des colonnes de \it Tab \rm de taille $ n_2+1 $\\
+    Enfin, on stocke dans deux listes chainées( puis des tableaux)de tailles respectives $n_1 +1$ et $n_2+1$ les lignes des fichiers d'entrée et de sortie (de structure \it struct line \rm ).
 
   \subsection{Nombre de défauts de cache sur le modèle CO\,: }
-    \paragraph{Justification\,: }
+   
+Notons Z la taille du cache, L la taille des lignes de cache.\\  
+Si $Z<max(n_1,n_2)/L$, l'initialisation des tableaux \it Tab \rm et \it Top \rm provoque environ $2(n_1+n_2)/L$ défauts de cache, sinon 0 défauts de cache. \\
 
+Si $Z>2(n_1n_2)/L$, alors le remplissage des tableaux ne provoque pas de défauts de cache. Sinon, il en provoque $O(n_1n_2/L)$.
 
+Si $Z > n_1+n_2+2$   le remplissage du tableau \it path \rm ne provoque pa de défaut de cache, sinon il y en a $O((n1+n2)/L)$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Compte rendu d'expérimentation (2 points)}
   \subsection{Conditions expérimentaless}
-     {\em Décrire les conditions permettant la reproductibilité des mesures: on demande la description
-      de la machine et la méthode utilisée pour mesurer le temps.
-     }
-
+     
     \subsubsection{Description synthétique de la machine\,:} 
-      {\em indiquer ici le  processeur et sa fréquence, la mémoire, le système d'exploitation. 
-       Préciser aussi si la machine était monopolisée pour un test, ou notamment si 
-       d'autres processus ou utilisateurs étaient en cours d'exécution. 
+      {Processeur: inter CORE I5vPro\\
+      Fréquence: 800.292 MHz\\
+      Mémoire: 8Go\\
+      Système d'exploitation: Ubuntu\\
+       Seul firefox était ouvert au moment des mesures pendant les tests.
       } 
 
     \subsubsection{Méthode utilisée pour les mesures de temps\,: } 
-      {\em préciser ici  comment les mesures de temps ont été effectuées (fonction appelée) et l'unité de temps; en particulier, 
-       préciser comment les 5 exécutions pour chaque test ont été faites (par exemple si le même test est fait 5 fois de suite, ou si les tests sont alternés entre
-       les mesures, ou exécutés en concurrence etc). 
+      {
+       Les mesures de temps ont été effectuées avec la lignes suivante:\\
+       \verb+time ./bin/computePatchOpt benchmark/benchmark_n/source benchmark/benchmark_n/target > patch+ \\
+       Le temps retourné était donc en seconde, nous avons retenu la partie user.
+       Un même test a été exécuté 5 fois de suite pour un même benchmark.
       }
 
   \subsection{Mesures expérimentales}
-    {\em Compléter le tableau suivant par les temps d'exécution mesurés pour chacun des 6 benchmarks imposés
-              (temps minimum, maximum et moyen sur 5 exécutions)
-    }
+
 
     \begin{figure}[h]
       \begin{center}
@@ -97,35 +102,88 @@ et $c_1$ et $c_2$ de caractères des deux fichiers en entrée.
             & du patch     & min       & max     & moyen \\
           \hline
           \hline
-            benchmark1 &      &     &     &     \\
+            benchmark1 &  2540    &  0.045   & 0.096    & 0.072    \\
           \hline
-            benchmark2 &      &     &     &     \\
+            benchmark2 &    3120  &   0.195  & 0.255    & 0.284    \\
           \hline
-            benchmark3 &      &     &     &     \\
+            benchmark3 &     809 &  0.522   &  0.653   &  0.584   \\
           \hline
-            benchmark4 &      &     &     &     \\
+            benchmark4 &    1708  &   1.272  & 1.331    &  1.309   \\
           \hline
-            benchmark5 &      &     &     &     \\
+            benchmark5 &    7553  &   2.262  & 2.793    &  2.387   \\
           \hline
-            benchmark6 &      &     &     &     \\
+            benchmark6 &    37027  &  12.339   &  12.718   & 12.496    \\
           \hline
           \hline
         \end{tabular}
-        \caption{Mesures des temps minimum, maximum et moyen de 5 exécutions pour les 6 benchmarks.}
+        \caption{Mesures des temps minimum, maximum et moyen de 5 exécutions pour les 6 benchmarks en seconde.}
         \label{table-temps}
       \end{center}
     \end{figure}
 
 \subsection{Analyse des résultats expérimentaux}
-{\em Donner  une réponse justifiée  à la question\,: 
-              les  temps mesurés correspondent ils  à votre analyse théorique (nombre d’opérations et défauts de cache) ?
-}
+A chaque benchmark, le nombre de lignes augmente, par conséquent le nombre d'opération (dépendant du nombre de lignes et du nombre de caractères des fichiers source et cible) augmente également. De plus, les structures de données utilisées pour stocker les données sont forcément de plus grande taille, et donc le nombre de défauts de cache augmente de manière exponentielle !! 
+Les résultats expérimentaux présentés dans le tableau ci-dessous montrent bien cette augmentation exponentielle. 
+
+
+              \begin{figure}[h]
+      \begin{center}
+        \begin{tabular}{|l||r||r|r|r||}
+          \hline
+          \hline
+            Benchmark & LLi misses & LLd misses \\
+          \hline
+          \hline
+            benchmark1 &  1 123 & 140 872    \\
+          \hline
+            benchmark2 &  1 130   & 6 832 521 \\
+          \hline
+            benchmark3 &  1 122  & 16 728 779\\
+          \hline
+            benchmark4 &  1 128    & 31 335 061\\
+          \hline
+            benchmark5 &   1 131   & 49 768 505\\
+          \hline
+            benchmark6 &    1 134 & 217 237 598\\
+          \hline
+          \hline
+        \end{tabular}
+        \caption{Nombres de défauts de cache expérimentaux pour chaque benchmark}
+        \label{table-temps}
+      \end{center}
+    \end{figure}
+  
+   
+    Mesures effectuées avec cachegrind, selon la commande suivante:\\
+    \verb+valgrind --tool=cachegrind computePatchOpt F1 F2+ 
+ 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Question\,: et  si le coût d'un patch était sa taille en octets ? (1 point)}
-{\em Préciser le principe de la résolution choisie (parmi celles vues en cours); donner  les modifications à apporter (soit à vos  équations, soit à votre programme, au choix) 
-pour s'adapter à cette nouvelle fonction de coût. 
-}
+Si le coût d'un patch était sa taille en octet, on utiliserait la même méthode que dans notre programme, on changerait seulement l'équation de Bellman pour modéliser le problème (et donc la fonction \it mimimum \rm ) de notre programme. \\
+
+La nouvelle équation de Bellman serait la suivante : 
+\begin{align*}
+V(n,m)= min ~~(~~  &  V(n-1,m-1), \\
+& 4 + L(F_2(m))+V(n,m-1),\\
+&  4+L(F_2(m))+V(n-1,m-1)\\
+& 4 + V(n-1, m),\\
+& min_{i\in [2,n]} (6+ V(n-i,m)) ~~~)
+\end{align*}
+
+avec $L(F_2(j))$ le nombre de caractères de la ligne j du fichier $F_2$, en comptant le caractère de fin de ligne "\backslash n" \\
+
+Si l'on recopie une ligne, alors ça ne coûte rien et on est ramené au même problème, sur des fichiers de longueur $n-1$ et $m-1$. \\
+Si l'on ajoute une ligne, on écrit dans le patch $4+L(F_2(j))$ caractères et on est ramené au même problème sur des fichiers de longueur $n$ et $m-1$. \\
+Si l'on substitue une ligne, on écrit dans le patch $4+L(F_2(j))$ caractères et on est ramené au même problème sur des fichiers de longueur $n-1$ et $m-1$. \\
+Si l'on supprime une ligne, on écrit dans le patch $4$ caractères et on est ramené au même problème sur des fichiers de longueur $n-1$ et  $m$.\\
+Enfin si l'on supprime $i$ lignes ($i\leq n$), on écrit dans le patch $6$ caractères et on est ramené au même problème sur des fichiers de longueur $n-i$ et $m$. 
+
+\section{Optimisations possibles}
+Tout d'abord, nous stockons les lignes dans 2 structures différentes: liste chaînée puis tableau. Cela nous permet un accès plus facile aux valeurs mais augmente la place mémoire nécessaire. \\
+Le stockage de tous les coûts dans notre tableau Tab n'est pas indispensable. En effet, lorsque l'on s'intéresse à une case nous n'avons besoin que de la ligne associée ainsi que la précédente pour les calculs. Ainsi, nous aurions donc pu diminuer la place occupée par ce tableau. 
+
+
 
 \end{document}
 %% Fin mise au format
